@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O Mistério do Cinco Estrelas — RPG de Investigação</title>
+<style>
+:root{--bg:#090b12;--panel:#141827;--panel2:#1b2033;--text:#f4f1e8;--muted:#aeb4c5;--gold:#e7b95c;--red:#e85d65;--green:#65d39a;--blue:#68a8ff}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 50% 0,#25263a 0,#090b12 55%);color:var(--text);font-family:system-ui,Segoe UI,sans-serif;min-height:100vh}
+button{font:inherit}.wrap{max-width:1100px;margin:auto;padding:24px}
+header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:clamp(25px,4vw,42px);letter-spacing:.5px} .subtitle{color:var(--muted);margin-top:5px}
+.hud{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.stat{background:var(--panel);border:1px solid #2a3047;border-radius:14px;padding:9px 13px}
+.hearts{letter-spacing:3px;color:var(--red)} .xpbar{height:8px;width:130px;background:#292d3d;border-radius:9px;overflow:hidden;margin-top:5px}.xpfill{height:100%;width:0;background:var(--gold);transition:.3s}
+.game{display:grid;grid-template-columns:1.5fr .8fr;gap:18px}.scene,.side{background:rgba(20,24,39,.94);border:1px solid #2a3047;border-radius:20px;box-shadow:0 20px 50px #0008}
+.scene{padding:24px;min-height:590px}.side{padding:18px}
+.location{color:var(--gold);font-weight:800;text-transform:uppercase;letter-spacing:1.5px;font-size:13px}
+.scene h2{font-size:30px;margin:8px 0}.desc{color:#d4d7e0;line-height:1.65}
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.room{background:var(--panel2);border:1px solid #30374f;border-radius:14px;padding:14px;cursor:pointer;transition:.18s}.room:hover{transform:translateY(-2px);border-color:var(--gold)}.room.locked{opacity:.4;cursor:not-allowed}.room small{color:var(--muted);display:block;margin-top:5px}
+.actions{display:grid;gap:10px;margin-top:20px}.action{background:#20263a;color:var(--text);border:1px solid #363e59;padding:13px 15px;border-radius:12px;text-align:left;cursor:pointer}.action:hover{border-color:var(--gold);background:#272e46}.action.good{border-color:#356c53}.action.danger{border-color:#713b43}
+.panelTitle{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);font-weight:800;margin:0 0 10px}.side section{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid #2a3047}.side section:last-child{border:0;margin:0}
+.inventory{display:flex;flex-wrap:wrap;gap:8px}.item{background:#242b40;border:1px solid #39425d;border-radius:10px;padding:8px 10px;font-size:13px}.clue{padding:10px 12px;background:#1b2132;border-left:3px solid var(--gold);border-radius:7px;margin:7px 0;color:#d9dce5;font-size:13px;line-height:1.4}
+.dialogue{background:#101521;border-radius:14px;padding:15px;margin-top:18px;border:1px solid #2d354d}.speaker{color:var(--blue);font-weight:800}.log{max-height:155px;overflow:auto;color:var(--muted);font-size:12px;line-height:1.5}
+.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:20px;z-index:10}.modal.show{display:flex}.card{max-width:650px;width:100%;background:#151a2a;border:1px solid #3b4562;border-radius:20px;padding:28px;box-shadow:0 25px 80px #000}
+.card h2{margin-top:0}.center{text-align:center}.big{font-size:52px}.restart{background:var(--gold);color:#17130a;border:0;padding:12px 18px;border-radius:12px;font-weight:800;cursor:pointer}
+.notice{padding:11px 13px;background:#20263a;border-radius:10px;margin-top:12px;color:#d7dae4}
+@media(max-width:800px){.game{grid-template-columns:1fr}.scene{min-height:auto}.map{grid-template-columns:1fr 1fr}header{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>🔎 O Mistério do Cinco Estrelas</h1><div class="subtitle">RPG de investigação • você decide o próximo passo</div></div>
+  <div class="hud">
+    <div class="stat">❤️ <span id="hearts">❤️❤️❤️</span></div>
+    <div class="stat">⭐ Investigação <b id="score">0</b><div class="xpbar"><div class="xpfill" id="xp"></div></div></div>
+  </div>
+</header>
+
+<div class="game">
+<main class="scene">
+  <div class="location" id="loc">EMPEROR PARK HOTEL</div>
+  <h2 id="title">Uma noite estranha</h2>
+  <div class="desc" id="desc"></div>
+  <div id="content"></div>
+  <div class="dialogue"><span class="speaker" id="speaker">Narrador</span><div id="dialogue"></div></div>
+  <div class="actions" id="actions"></div>
+</main>
+
+<aside class="side">
+<section><div class="panelTitle">🎒 Inventário</div><div class="inventory" id="inventory"></div></section>
+<section><div class="panelTitle">🧩 Pistas descobertas</div><div id="clues"></div></section>
+<section><div class="panelTitle">🗺️ Hotel</div><div class="map" id="map"></div></section>
+<section><div class="panelTitle">📜 Diário</div><div class="log" id="log"></div></section>
+</aside>
+</div>
+</div>
+
+<div class="modal" id="modal"><div class="card center"><div class="big" id="endIcon">🏆</div><h2 id="endTitle"></h2><p id="endText"></p><button class="restart" onclick="location.reload()">Jogar novamente</button></div></div>
+
+<script>
+const state={hearts:3,score:0,room:"lobby",inventory:[],clues:[],flags:{},log:[]};
+
+const rooms={
+ lobby:{name:"Saguão",icon:"🏨",desc:"O saguão do Emperor Park Hotel está quase vazio. O brilho dos lustres não combina com o silêncio da noite.",locked:false},
+ corredor:{name:"Corredor dos quartos",icon:"🚪",desc:"Um corredor longo, tapete escuro e várias portas numeradas. Há marcas recentes perto de uma delas.",locked:false},
+ quarto:{name:"Quarto suspeito",icon:"🛏️",desc:"A porta está entreaberta. Lá dentro, tudo parece arrumado demais — como se alguém tivesse tentado apagar os sinais de uma investigação.",locked:true},
+ cozinha:{name:"Cozinha",icon:"🍽️",desc:"O movimento dos funcionários esconde conversas importantes. Uma caixa de objetos esquecidos chama atenção.",locked:false},
+ elevador:{name:"Elevador",icon:"🛗",desc:"O elevador para em andares diferentes. Um painel antigo tem um botão que não aparece no mapa do hotel.",locked:true},
+ area:{name:"Área restrita",icon:"🔐",desc:"Uma passagem estreita leva a uma área que não deveria estar aberta para hóspedes.",locked:true}
+};
+
+function addLog(t){state.log.unshift(t);renderLog()}
+function clue(t){if(!state.clues.includes(t)){state.clues.push(t);state.score+=10;addLog("🧩 Pista: "+t)}}
+function item(t){if(!state.inventory.includes(t)){state.inventory.push(t);state.score+=5;addLog("🎒 Item encontrado: "+t)}}
+function hurt(){state.hearts--;addLog("❌ Uma escolha arriscada fez você perder um coração.");if(state.hearts<=0)end("💔","A investigação terminou","Você ficou sem corações. O mistério continua sem solução.");render()}
+function gain(n=10){state.score+=n;addLog("⭐ Você ganhou "+n+" pontos de investigação.");render()}
+
+function render(){
+ document.getElementById("hearts").textContent="❤️".repeat(state.hearts)+"🖤".repeat(3-state.hearts);
+ document.getElementById("score").textContent=state.score;
+ document.getElementById("xp").style.width=Math.min(100,state.score/1.5)+"%";
+ document.getElementById("inventory").innerHTML=state.inventory.length?state.inventory.map(x=>`<span class="item">${x}</span>`).join(""):"<span class='item'>vazio</span>";
+ document.getElementById("clues").innerHTML=state.clues.length?state.clues.map(x=>`<div class="clue">${x}</div>`).join(""):"<div class='clue'>Nenhuma pista ainda.</div>";
+ document.getElementById("map").innerHTML=Object.entries(rooms).map(([k,r])=>`<div class="room ${r.locked&&!state.flags["unlock_"+k]?"locked":""}" onclick="go('${k}')">${r.icon} <b>${r.name}</b><small>${r.locked&&!state.flags["unlock_"+k]?"Bloqueado":"Explorar"}</small></div>`).join("");
+ renderLog();
+}
+function renderLog(){document.getElementById("log").innerHTML=state.log.length?state.log.map(x=>`<div>${x}</div>`).join(""):"A investigação ainda não começou."}
+
+function go(room){
+ const r=rooms[room];
+ if(r.locked&&!state.flags["unlock_"+room]){addLog("🔒 Essa área ainda está bloqueada.");render();return}
+ state.room=room; showRoom();
+}
+function setScene(title,desc,speaker,text,actions){
+ document.getElementById("loc").textContent=rooms[state.room].name.toUpperCase();
+ document.getElementById("title").textContent=title;
+ document.getElementById("desc").textContent=desc;
+ document.getElementById("speaker").textContent=speaker;
+ document.getElementById("dialogue").textContent=text;
+ document.getElementById("actions").innerHTML=actions.map(a=>`<button class="action ${a.cls||""}" onclick="${a.fn}">${a.text}</button>`).join("");
+ document.getElementById("content").innerHTML="";
+ render();
+}
+function showRoom(){
+ if(state.room==="lobby") lobby();
+ if(state.room==="corredor") corridor();
+ if(state.room==="quarto") bedroom();
+ if(state.room==="cozinha") kitchen();
+ if(state.room==="elevador") elevator();
+ if(state.room==="area") area();
+}
+function lobby(){
+ if(!state.flags.lobbyIntro){state.flags.lobbyIntro=true;clue("Algo aconteceu no hotel, e alguém parece estar tentando esconder o que houve.");}
+ setScene("Uma noite estranha",rooms.lobby.desc,"Léo","Você percebe que o hotel guarda mais segredos do que aparenta. Por onde começar?",[
+ {text:"🗣️ Conversar com o funcionário da recepção",fn:"talkReception()"},
+ {text:"🔎 Examinar o balcão",fn:"searchDesk()"},
+ {text:"🚪 Ir para o corredor",fn:"go('corredor')"}
+ ]);
+}
+function talkReception(){
+ if(!state.flags.reception){state.flags.reception=true;clue("O funcionário menciona que uma porta do corredor foi aberta fora do horário.");item("Crachá antigo");gain(10);}
+ setScene("Conversa na recepção",rooms.lobby.desc,"Funcionário","“Eu não vi nada... só ouvi um barulho no corredor e depois o elevador se mexeu sozinho.”",[
+ {text:"🔎 Perguntar sobre o elevador",fn:"askElevator()"},
+ {text:"🚪 Investigar o corredor",fn:"go('corredor')"}
+ ]);
+}
+function askElevator(){clue("O elevador registrou uma parada que não aparece no mapa comum.");state.flags.unlock_elevador=true;gain(15);showRoom();}
+function searchDesk(){if(!state.flags.desk){state.flags.desk=true;item("Chave enferrujada");clue("A chave não parece pertencer a nenhum quarto comum.");}setScene("O balcão",rooms.lobby.desc,"Léo","Entre papéis antigos, você encontra uma chave marcada apenas com um símbolo.",[{text:"🚪 Ir para o corredor",fn:"go('corredor')"}])}
+function corridor(){
+ const a=[{text:"🔎 Examinar as marcas no chão",fn:"marks()"},{text:"🚪 Tentar a porta suspeita",fn:"tryDoor()"},{text:"🍽️ Ir para a cozinha",fn:"go('cozinha')"}];
+ setScene("O corredor",rooms.corredor.desc,"Léo","Há marcas discretas perto de uma porta. Talvez alguém tenha arrastado alguma coisa.",a);
+}
+function marks(){clue("As marcas indicam que algo pesado foi movido recentemente.");gain(10);if(state.inventory.includes("Chave enferrujada"))state.flags.unlock_quarto=true;setScene("Marcas recentes",rooms.corredor.desc,"Léo","A direção das marcas termina perto da porta suspeita.",[{text:"🚪 Investigar a porta",fn:"go('quarto')"},{text:"⬅️ Voltar ao saguão",fn:"go('lobby')"}])}
+function tryDoor(){if(state.inventory.includes("Chave enferrujada")){state.flags.unlock_quarto=true;gain(10);go('quarto')}else{hurt();setScene("A porta não abre",rooms.corredor.desc,"Léo","A fechadura parece exigir uma chave específica.",[{text:"🔎 Procurar uma chave",fn:"go('lobby')"}])}}
+function bedroom(){
+ if(!state.flags.bedroom){state.flags.bedroom=true;clue("Um bilhete cita o hotel e pede que uma informação seja mantida em segredo.");item("Bilhete dobrado");}
+ setScene("O quarto suspeito",rooms.quarto.desc,"Léo","Há um bilhete escondido e uma fotografia atrás de um móvel. Tudo indica que alguém esteve aqui procurando alguma coisa.",[
+ {text:"📷 Examinar a fotografia",fn:"photo()"},
+ {text:"📝 Decifrar o bilhete",fn:"note()"},
+ {text:"🛗 Seguir a pista do elevador",fn:"go('elevador')"}
+ ]);
+}
+function photo(){clue("Na fotografia aparece uma parte do hotel que não deveria estar acessível aos hóspedes.");item("Fotografia");state.flags.unlock_area=true;gain(20);showRoom()}
+function note(){if(!state.flags.note){state.flags.note=true;clue("O bilhete aponta para uma passagem ligada ao elevador.");gain(15)}setScene("O bilhete",rooms.quarto.desc,"Léo","As palavras não dão uma resposta pronta: elas apontam para outro lugar do hotel.",[{text:"🛗 Investigar o elevador",fn:"go('elevador')"}])}
+function kitchen(){
+ setScene("A cozinha",rooms.cozinha.desc,"Léo","Funcionários entram e saem rapidamente. Uma caixa de objetos esquecidos está sobre uma mesa.",[
+ {text:"📦 Vasculhar a caixa",fn:"box()"},
+ {text:"🗣️ Perguntar a um funcionário",fn:"cookTalk()"},
+ {text:"⬅️ Voltar ao saguão",fn:"go('lobby')"}
+ ]);
+}
+function box(){if(!state.flags.box){state.flags.box=true;item("Lanterna");clue("A lanterna tem uma etiqueta indicando manutenção de uma área subterrânea.");gain(15)}showRoom()}
+function cookTalk(){if(!state.flags.cook){state.flags.cook=true;clue("Um funcionário confirma que existe uma passagem de serviço perto do elevador.");state.flags.unlock_elevador=true;gain(10)}showRoom()}
+function elevator(){
+ setScene("O elevador",rooms.elevador.desc,"Léo","O painel tem um botão quase apagado. Ele parece levar a uma área de serviço.",[
+ {text:"🔘 Apertar o botão oculto",fn:"secretButton()"},
+ {text:"🔎 Examinar o painel",fn:"panel()"},
+ {text:"⬅️ Voltar",fn:"go('corredor')"}
+ ]);
+}
+function panel(){clue("O botão oculto foi usado recentemente.");gain(10);state.flags.unlock_area=true;showRoom()}
+function secretButton(){if(state.inventory.includes("Lanterna")||state.flags.unlock_area){state.flags.unlock_area=true;go('area')}else{hurt();showRoom()}}
+function area(){
+ const enough=state.clues.length>=5;
+ setScene("A área restrita",rooms.area.desc,"Léo","Aqui estão as últimas peças do quebra-cabeça. Agora você precisa decidir como usar o que descobriu.",[
+ {text:"🧩 Juntar todas as pistas e reconstruir o caso",fn:"solve()"},
+ {text:"🔎 Procurar mais uma evidência",fn:"finalClue()"},
+ {text:"🏃 Sair e encerrar a investigação",fn:"end('neutral')"}
+ ]);
+ if(enough) document.getElementById("content").innerHTML="<div class='notice'>Você já reuniu pistas suficientes para tentar resolver o mistério.</div>";
+}
+function finalClue(){clue("A área restrita confirma que as pistas do hotel estão conectadas.");gain(20);solve()}
+function solve(){
+ const n=state.clues.length;
+ if(n>=7)end("🏆","Mistério solucionado!","Você conectou as pistas, explorou áreas escondidas e chegou à conclusão do caso com uma investigação completa.");
+ else if(n>=5)end("⭐","Caso resolvido com boas pistas","Você encontrou evidências importantes e conseguiu reconstruir o essencial do mistério. Ainda ficaram detalhes sem resposta.");
+ else end("🕵️","Investigação incompleta","Você chegou longe, mas algumas pistas importantes ainda ficaram pelo hotel.");
+}
+function end(kind,title,text){
+ let icon="🕵️"; if(kind==="💔")icon="💔"; else if(kind==="🏆")icon="🏆"; else if(kind==="⭐")icon="⭐";
+ document.getElementById("endIcon").textContent=icon;document.getElementById("endTitle").textContent=title;document.getElementById("endText").textContent=text+" Pontuação: "+state.score+". Pistas: "+state.clues.length+".";
+ document.getElementById("modal").classList.add("show");
+}
+addLog("🌙 Você entrou no Emperor Park Hotel. A investigação começa.");
+showRoom();
+</script>
+</body>
+</html>
